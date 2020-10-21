@@ -11,4 +11,5 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Walt's ADC Tutorial work
 
-[Chapter 8](Chapter8.html)
+* [Chapter 8](Chapter8.html)
+* [Cool Plots](data_viz.html)
