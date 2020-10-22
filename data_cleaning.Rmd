@@ -1,0 +1,75 @@
+---
+title: "Data Cleaning"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Setup, importing libraries
+
+```{r}
+library(rvest)
+library(readr)
+library(dplyr)
+library(janitor)
+library(tidyr)
+library(ggplot2)
+library(readr)
+```
+
+```{r}
+webpage <- read_html("https://www.pwrc.usgs.gov/bbl/manual/speclist.cfm")
+
+tbls <- html_nodes(webpage, "table") %>% 
+    html_table(fill = TRUE)
+
+species <- tbls[[1]] %>% 
+    clean_names() %>% 
+    select(alpha_code, common_name) %>% 
+    mutate(alpha_code = tolower(alpha_code))
+species
+```
+
+```{r}
+pred_dat <- read_csv("https://arcticdata.io/metacat/d1/mn/v2/object/urn%3Auuid%3A9ffec04c-7e2d-41dd-9e88-b6c2e8c4375e")
+nest_dat <- read_csv("https://arcticdata.io/metacat/d1/mn/v2/object/urn%3Auuid%3A982bd2fc-4edf-4da7-96ef-0d11b853102d")
+pred_dat
+```
+
+# Set up function to add species common names to tables
+```{r}
+column_join <- function(my_df, species_df) {
+  df_joined <- left_join(my_df, species_df, by = c("species" = "alpha_code"))
+}
+```
+# Add species common name to nest and predator tables
+```{r}
+nest_joined <- column_join(nest_dat,species)
+pred_joined <- column_join(pred_dat,species)
+```
+
+```{r}
+total_by_year <- pred_joined %>% 
+  group_by(year, common_name) %>% 
+  summarise(total_pred = sum(count, na.rm = TRUE)) %>% 
+  filter(!is.na(common_name))
+total_by_year
+```
+
+```{r}
+ggplot(total_by_year, mapping = aes(x = year, y = total_pred, fill = common_name)) +
+  geom_col()
+```
+
+```{r}
+totnests_by_year <- nest_joined %>% 
+  group_by(common_name, year) %>% 
+  summarise(total_predated = sum(number_eggs_predated, na.rm = TRUE)) %>% 
+  filter(!is.na(common_name))
+totnests_by_year
+```
+
+
+
